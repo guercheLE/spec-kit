@@ -28,6 +28,9 @@ import sys
 import zipfile
 import tempfile
 import shutil
+import select
+import termios
+import tty
 import json
 from pathlib import Path
 from typing import Optional, Tuple
@@ -183,6 +186,14 @@ MINI_BANNER = """
 ╚═╝╩  ╚═╝╚═╝╩╚   ╩ 
 """
 
+def is_vscode_terminal():
+    """Check if we're running in VS Code's integrated terminal."""
+    return (
+        os.environ.get('TERM_PROGRAM') == 'vscode' or 
+        os.environ.get('VSCODE_INJECTION') == '1' or
+        'vscode' in os.environ.get('TERM_PROGRAM_VERSION', '').lower()
+    )
+
 def get_key():
     """Get a single keypress in a cross-platform way using readchar."""
     key = readchar.readkey()
@@ -197,8 +208,12 @@ def get_key():
     if key == readchar.key.ENTER:
         return 'enter'
     
-    # Escape
-    if key == readchar.key.ESC:
+    # Space
+    if key == readchar.key.SPACE:
+        return 'space'
+    
+    # Escape - handle both single and double escape sequences
+    if key == readchar.key.ESC or key == '\x1b\x1b':
         return 'escape'
         
     # Ctrl+C
@@ -381,6 +396,46 @@ def select_multiple_with_arrows(options: dict, prompt_text: str = "Select option
         raise typer.Exit(1)
 
     return selected_keys
+
+
+def select_multiple_with_text_input(options: dict, prompt_text: str = "Select options", default_keys: list[str] = None) -> list[str]:
+    """
+    Interactive multiple selection using text input (VS Code-safe fallback).
+    
+    Args:
+        options: Dict with keys as option keys and values as descriptions
+        prompt_text: Text to show above the options
+        default_keys: Default selections if user presses Enter without input
+    
+    Returns:
+        List of selected option keys
+    """
+    if default_keys is None:
+        default_keys = []
+    
+    # Display available options
+    console.print(f"\n[bold cyan]{prompt_text}[/bold cyan]")
+    for i, (key, name) in enumerate(options.items(), 1):
+        console.print(f"  {i}. {name} ({key})")
+    
+    default_display = ", ".join(default_keys) if default_keys else "none"
+    console.print(f"\n[yellow]Enter numbers separated by commas (e.g., 1,3,5) or press Enter for default ({default_display}):[/yellow]")
+    
+    try:
+        choice = input().strip()
+        if not choice:
+            return default_keys if default_keys else ["copilot"]
+        else:
+            choices = [int(x.strip()) for x in choice.split(',')]
+            ai_keys = list(options.keys())
+            selected_keys = [ai_keys[i-1] for i in choices if 1 <= i <= len(ai_keys)]
+            return selected_keys if selected_keys else (default_keys if default_keys else ["copilot"])
+    except (ValueError, IndexError):
+        console.print(f"[yellow]Invalid selection, using default ({default_display})[/yellow]")
+        return default_keys if default_keys else ["copilot"]
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Selection cancelled[/yellow]")
+        raise typer.Exit(1)
 
 
 
@@ -1046,11 +1101,19 @@ def init(
         selected_ais = ai_assistant
     else:
         # Use arrow-key selection interface for multiple selection
-        selected_ais = select_multiple_with_arrows(
-            AI_CHOICES, 
-            "Choose your AI assistant(s) (Space to select, Enter to confirm):", 
-            ["copilot"]  # Default selection
-        )
+        if is_vscode_terminal():
+            # VS Code-safe fallback: use simple text-based selection
+            selected_ais = select_multiple_with_text_input(
+                AI_CHOICES,
+                "Available AI assistants:",
+                ["copilot"]  # Default selection
+            )
+        else:
+            selected_ais = select_multiple_with_arrows(
+                AI_CHOICES, 
+                "Choose your AI assistant(s) (Space to select, Enter to confirm):", 
+                ["copilot"]  # Default selection
+            )
     
     # Check agent tools unless ignored
     if not ignore_agent_tools:
