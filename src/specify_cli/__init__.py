@@ -735,34 +735,43 @@ def download_and_extract_template_multi(project_path: Path, ai_assistant: str, s
         # but without re-downloading
         import zipfile
         import shutil
+        import tempfile
         
         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-            zip_ref.extractall(current_dir)
-        
-        # Find the extracted directory and move it to project_path
-        extracted_dirs = [d for d in current_dir.iterdir() if d.is_dir() and d.name.startswith(f"spec-kit-template-{ai_assistant}")]
-        if not extracted_dirs:
-            raise RuntimeError(f"No extracted template directory found for {ai_assistant}")
-        
-        extracted_dir = extracted_dirs[0]
-        
-        if is_current_dir:
-            # Copy contents to current directory
-            for item in extracted_dir.iterdir():
-                dest = project_path / item.name
-                if item.is_dir():
-                    if dest.exists():
-                        shutil.rmtree(dest)
-                    shutil.copytree(item, dest)
+            # Extract to a temporary directory to avoid affecting current directory
+            with tempfile.TemporaryDirectory() as temp_dir:
+                temp_path = Path(temp_dir)
+                zip_ref.extractall(temp_path)
+                
+                # List what was extracted
+                extracted_items = list(temp_path.iterdir())
+                if not extracted_items:
+                    raise RuntimeError(f"No files were extracted from template for {ai_assistant}")
+                
+                # The ZIP contains project files directly, not in a wrapper directory
+                if is_current_dir:
+                    # Copy contents to current directory
+                    for item in extracted_items:
+                        dest = project_path / item.name
+                        if item.is_dir():
+                            if dest.exists():
+                                shutil.rmtree(dest)
+                            shutil.copytree(item, dest)
+                        else:
+                            shutil.copy2(item, dest)
                 else:
-                    shutil.copy2(item, dest)
-            # Remove the extracted template directory
-            shutil.rmtree(extracted_dir)
-        else:
-            # Move the entire directory
-            if project_path.exists():
-                shutil.rmtree(project_path)
-            extracted_dir.rename(project_path)
+                    # Create project directory and copy contents
+                    if not project_path.exists():
+                        project_path.mkdir(parents=True)
+                    
+                    for item in extracted_items:
+                        dest = project_path / item.name
+                        if item.is_dir():
+                            if dest.exists():
+                                shutil.rmtree(dest)
+                            shutil.copytree(item, dest)
+                        else:
+                            shutil.copy2(item, dest)
         
         if tracker:
             tracker.complete(extract_key, "extracted successfully")
