@@ -31,7 +31,8 @@ $featureNum = ('{0:000}' -f $next)
 
 $branchName = $featureDesc.ToLower() -replace '[^a-z0-9]', '-' -replace '-{2,}', '-' -replace '^-', '' -replace '-$', ''
 $words = ($branchName -split '-') | Where-Object { $_ } | Select-Object -First 3
-$branchName = "$featureNum-$([string]::Join('-', $words))"
+$featureDirName = "$featureNum-$([string]::Join('-', $words))"
+$branchName = "feature/$featureDirName"
 
 # Enhanced branching logic: prioritize develop > main > master > current
 function Get-BaseBranch {
@@ -49,9 +50,17 @@ function Get-BaseBranch {
 
 $baseBranch = Get-BaseBranch
 git checkout $baseBranch | Out-Null
-git checkout -b $branchName | Out-Null
 
-$featureDir = Join-Path $specsDir $branchName
+# Check if branch already exists (for resumption scenarios)
+$branchExists = git show-ref --verify --quiet "refs/heads/$branchName" -ErrorAction SilentlyContinue
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "[specify] Branch $branchName already exists, checking out..." -ForegroundColor Yellow
+    git checkout $branchName | Out-Null
+} else {
+    git checkout -b $branchName | Out-Null
+}
+
+$featureDir = Join-Path $specsDir $featureDirName
 New-Item -ItemType Directory -Path $featureDir -Force | Out-Null
 
 $template = Join-Path $repoRoot 'templates/spec-template.md'
