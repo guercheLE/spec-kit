@@ -33,6 +33,11 @@ import json
 from pathlib import Path
 from typing import Optional, Tuple
 
+# Add the project root to Python path to ensure imports work from any directory
+_script_dir = Path(__file__).parent.absolute()
+_project_root = _script_dir.parent.parent.absolute()
+if str(_project_root) not in sys.path:
+    sys.path.insert(0, str(_project_root))
 
 import typer
 import httpx
@@ -538,7 +543,9 @@ def check_tool(tool: str, install_hint: str) -> bool:
 def is_git_repo(path: Path = None) -> bool:
     """Check if the specified path is inside a git repository."""
     if path is None:
-        path = Path.cwd()
+        path = Path.cwd().resolve()
+    else:
+        path = path.resolve()
     
     if not path.is_dir():
         return False
@@ -561,7 +568,8 @@ def init_git_repo(project_path: Path, quiet: bool = False) -> bool:
     quiet: if True suppress console output (tracker handles status)
     """
     try:
-        original_cwd = Path.cwd()
+        original_cwd = Path.cwd().resolve()
+        project_path = project_path.resolve()
         os.chdir(project_path)
         if not quiet:
             console.print("[cyan]Initializing git repository...[/cyan]")
@@ -695,7 +703,8 @@ def download_template_from_github(ai_assistant: str, download_dir: Path, *, scri
 
 def download_and_extract_template_multi(project_path: Path, ai_assistant: str, script_type: str, is_current_dir: bool = False, *, verbose: bool = True, tracker: StepTracker | None = None, client: httpx.Client = None, debug: bool = False, github_token: str = None) -> Path:
     """Download and extract template for multiple AI assistants with AI-specific tracking."""
-    current_dir = Path.cwd()
+    current_dir = Path.cwd().resolve()
+    project_path = project_path.resolve()
     
     # Use AI-specific tracker keys
     fetch_key = f"fetch-{ai_assistant}"
@@ -803,7 +812,8 @@ def download_and_extract_template(project_path: Path, ai_assistant: str, script_
     """Download the latest release and extract it to create a new project.
     Returns project_path. Uses tracker if provided (with keys: fetch, download, extract, cleanup)
     """
-    current_dir = Path.cwd()
+    current_dir = Path.cwd().resolve()
+    project_path = project_path.resolve()
     
     # Step: fetch + download combined
     if tracker:
@@ -961,6 +971,7 @@ def ensure_executable_scripts(project_path: Path, tracker: StepTracker | None = 
     """Ensure POSIX .sh scripts under .specify/scripts (recursively) have execute bits (no-op on Windows)."""
     if os.name == "nt":
         return  # Windows: skip silently
+    project_path = project_path.resolve()
     scripts_root = project_path / ".specify" / "scripts"
     if not scripts_root.is_dir():
         return
@@ -1054,8 +1065,8 @@ def init(
     
     # Determine project directory
     if here:
-        project_name = Path.cwd().name
-        project_path = Path.cwd()
+        project_name = Path.cwd().resolve().name
+        project_path = Path.cwd().resolve()
         
         # Check if current directory has any files
         existing_items = list(project_path.iterdir())
@@ -1076,7 +1087,7 @@ def init(
             raise typer.Exit(1)
     
     # Create formatted setup info with column alignment
-    current_dir = Path.cwd()
+    current_dir = Path.cwd().resolve()
     
     setup_lines = [
         "[cyan]Specify Project Setup[/cyan]",
