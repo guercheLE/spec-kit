@@ -29,11 +29,10 @@ import zipfile
 import tempfile
 import shutil
 import select
-import termios
-import tty
 import json
 from pathlib import Path
 from typing import Optional, Tuple
+
 
 import typer
 import httpx
