@@ -6,14 +6,12 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = git rev-parse --show-toplevel
 $currentBranch = git rev-parse --abbrev-ref HEAD
 $featureDir = Join-Path $repoRoot "specs/$currentBranch"
-$newPlan = Join-Path $featureDir 'plan.md'
-if (-not (Test-Path $newPlan)) { Write-Error "ERROR: No plan.md found at $newPlan"; exit 1 }
+$newPlan = Join-Path $featureDir 'feature-planning.md'
+if (-not (Test-Path $newPlan)) { Write-Error "ERROR: No feature-planning.md found at $newPlan"; exit 1 }
 
 $claudeFile = Join-Path $repoRoot 'CLAUDE.md'
 $geminiFile = Join-Path $repoRoot 'GEMINI.md'
 $copilotFile = Join-Path $repoRoot '.github/copilot-instructions.md'
-# NOTE: Breaking change! The Cursor context file path has changed from '.cursor/rules/specify-rules.mdc' to '.cursor/commands/specify-rules.md'.
-# If you have existing Cursor configurations, update them to use the new path.
 $cursorFile = Join-Path $repoRoot '.cursor/commands/specify-rules.md'
 $qwenFile = Join-Path $repoRoot 'QWEN.md'
 $agentsFile = Join-Path $repoRoot 'AGENTS.md'
@@ -24,7 +22,7 @@ Write-Output "=== Updating agent context files for feature $currentBranch ==="
 function Get-PlanValue($pattern) {
     if (-not (Test-Path $newPlan)) { return '' }
     $line = Select-String -Path $newPlan -Pattern $pattern | Select-Object -First 1
-    if ($line) { return ($line.Line -replace "^\*\*$pattern\*\*: ", '') }
+    if ($line) { return ($line.Line -replace "^\*\*$pattern\*\*: ") }
     return ''
 }
 
@@ -41,7 +39,7 @@ function Initialize-AgentFile($targetFile, $agentName) {
     $content = Get-Content $template -Raw
     $content = $content.Replace('[PROJECT NAME]', (Split-Path $repoRoot -Leaf))
     $content = $content.Replace('[DATE]', (Get-Date -Format 'yyyy-MM-dd'))
-    $content = $content.Replace('[EXTRACTED FROM ALL PLAN.MD FILES]', "- $newLang + $newFramework ($currentBranch)")
+    $content = $content.Replace('[EXTRACTED FROM ALL FEATURE-PLANNING.MD FILES]', "- $newLang + $newFramework ($currentBranch)")
     if ($newProjectType -match 'web') { $structure = "backend/`nfrontend/`ntests/" } else { $structure = "src/`ntests/" }
     $content = $content.Replace('[ACTUAL STRUCTURE FROM PLANS]', $structure)
     if ($newLang -match 'Python') { $commands = 'cd src && pytest && ruff check .' }
@@ -59,14 +57,18 @@ function Initialize-AgentFile($targetFile, $agentName) {
 function Update-AgentFile($targetFile, $agentName) {
     if (-not (Test-Path $targetFile)) { Initialize-AgentFile $targetFile $agentName; return }
     $content = Get-Content $targetFile -Raw
-    if ($newLang -and ($content -notmatch [regex]::Escape($newLang))) { $content = $content -replace '(## Active Technologies\n)', "`$1- $newLang + $newFramework ($currentBranch)`n" }
-    if ($newDb -and $newDb -ne 'N/A' -and ($content -notmatch [regex]::Escape($newDb))) { $content = $content -replace '(## Active Technologies\n)', "`$1- $newDb ($currentBranch)`n" }
-    if ($content -match '## Recent Changes\n([\s\S]*?)(\n\n|$)') {
+    if ($newLang -and ($content -notmatch [regex]::Escape($newLang))) { $content = $content -replace '(## Active Technologies
+)', "`$1- $newLang + $newFramework ($currentBranch)`n" }
+    if ($newDb -and $newDb -ne 'N/A' -and ($content -notmatch [regex]::Escape($newDb))) { $content = $content -replace '(## Active Technologies
+)', "`$1- $newDb ($currentBranch)`n" }
+    if ($content -match '## Recent Changes
+([\s\S]*?)(\n\n|$)') {
         $changesBlock = $matches[1].Trim().Split("`n")
     $changesBlock = ,"- ${currentBranch}: Added ${newLang} + ${newFramework}" + $changesBlock
         $changesBlock = $changesBlock | Where-Object { $_ } | Select-Object -First 3
         $joined = ($changesBlock -join "`n")
-        $content = [regex]::Replace($content, '## Recent Changes\n([\s\S]*?)(\n\n|$)', "## Recent Changes`n$joined`n`n")
+        $content = [regex]::Replace($content, '## Recent Changes
+([\s\S]*?)(\n\n|$)', "## Recent Changes`n$joined`n`n")
     }
     $content = [regex]::Replace($content, 'Last updated: \d{4}-\d{2}-\d{2}', "Last updated: $(Get-Date -Format 'yyyy-MM-dd')")
     $content | Set-Content $targetFile -Encoding UTF8
@@ -81,7 +83,6 @@ switch ($AgentType) {
     'qwen' { Update-AgentFile $qwenFile 'Qwen Code' }
     'opencode' { Update-AgentFile $agentsFile 'opencode' }
     'windsurf' { Update-AgentFile $windsurfFile 'Windsurf' }
-    'codex'    { Update-AgentFile $agentsFile 'Codex CLI' }
     '' {
         foreach ($pair in @(
             @{file=$claudeFile; name='Claude Code'},
@@ -90,17 +91,16 @@ switch ($AgentType) {
             @{file=$cursorFile; name='Cursor IDE'},
             @{file=$qwenFile; name='Qwen Code'},
             @{file=$agentsFile; name='opencode'},
-            @{file=$windsurfFile; name='Windsurf'},
-            @{file=$agentsFile; name='Codex CLI'}
+            @{file=$windsurfFile; name='Windsurf'}
         )) {
             if (Test-Path $pair.file) { Update-AgentFile $pair.file $pair.name }
         }
         if (-not (Test-Path $claudeFile) -and -not (Test-Path $geminiFile) -and -not (Test-Path $copilotFile) -and -not (Test-Path $cursorFile) -and -not (Test-Path $qwenFile) -and -not (Test-Path $agentsFile) -and -not (Test-Path $windsurfFile)) {
-            Write-Warning 'No agent files found and no agent specified. Please specify an agent type.'
+            Write-Error 'WARNING: No agent files found and no agent specified. Please specify an agent type.'
             exit 1
         }
     }
-    Default { Write-Error "ERROR: Unknown agent type '$AgentType'. Use: claude, gemini, copilot, cursor, qwen, opencode, windsurf, codex or leave empty for all."; exit 1 }
+    Default { Write-Error "ERROR: Unknown agent type '$AgentType'. Use: claude, gemini, copilot, cursor, qwen, opencode, windsurf or leave empty for all."; exit 1 }
 }
 
 Write-Output ''
@@ -110,4 +110,4 @@ if ($newFramework) { Write-Output "- Added framework: $newFramework" }
 if ($newDb -and $newDb -ne 'N/A') { Write-Output "- Added database: $newDb" }
 
 Write-Output ''
-Write-Output 'Usage: ./update-agent-context.ps1 [claude|gemini|copilot|cursor|qwen|opencode|windsurf|codex]'
+Write-Output 'Usage: ./update-agent-context.ps1 [claude|gemini|copilot|cursor|qwen|opencode|windsurf]'

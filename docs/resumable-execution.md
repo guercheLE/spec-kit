@@ -1,8 +1,8 @@
-# Resumable MVP-to-Full Execution Guide
+# Resumable orchestrate Execution Guide
 
 ## Overview
 
-The enhanced `mvp-to-full` prompt now supports **resumable execution** to handle token limit interruptions gracefully. This prevents the need to start from scratch when LLM context windows are exhausted.
+The enhanced `orchestrate` prompt now supports **resumable execution** to handle token limit interruptions gracefully. This prevents the need to start from scratch when LLM context windows are exhausted.
 
 ## Key Features
 
@@ -32,7 +32,7 @@ The enhanced `mvp-to-full` prompt now supports **resumable execution** to handle
    ```
 
 2. **Copy the Generated Command:**
-   The script outputs an exact `/mvp-to-full` command to use in a new chat window.
+   The script outputs an exact `/orchestrate` command to use in a new chat window.
 
 3. **Start New Chat and Paste:**
    Use the generated command exactly as provided.
@@ -48,7 +48,7 @@ Reason: token_limit
 
 1. Copy this EXACT command and paste in new chat:
 
-   /mvp-to-full Resume interrupted execution from 2025-09-20T19:51:13-03:00. Continue implementing tasks in spec: 001-mcp-server-infrastructure.
+   /orchestrate Resume interrupted execution from 2025-09-20T19:51:13-03:00. Continue implementing tasks in spec: 001-mcp-server-infrastructure.
 
 2. Include this state context:
 
@@ -147,9 +147,9 @@ ls -la .specify/scripts/bash/
 ./.specify/scripts/bash/analyze-project-state.sh --json | jq .
 ```
 
-## Integration with MVP-to-Full
+## Integration with orchestrate
 
-The enhanced `mvp-to-full` prompt automatically:
+The enhanced `orchestrate` prompt automatically:
 
 1. **Detects Resumption**: Checks if arguments contain "Resume interrupted execution"
 2. **Analyzes Current State**: Runs spec completion analysis

@@ -48,7 +48,7 @@ Write-Output "🔍 Step 2: Auto-clarifying specification..."
 # This would normally be done by AI, but we'll simulate it
 if (Test-Path $specFile) {
     $content = Get-Content -Path $specFile -Raw
-    $content = $content -replace '\[NEEDS CLARIFICATION: [^\]]*\]', '[CLARIFIED: Auto-resolved by orchestrator]'
+    $content = $content -replace '\[NEEDS CLARIFICATION: [^]]*\]', '[CLARIFIED: Auto-resolved by orchestrator]'
     Set-Content -Path $specFile -Value $content -NoNewline
 }
 Write-Output "✅ Clarifications resolved"
@@ -70,7 +70,7 @@ Write-Output "✅ Plan file: $planFile"
 # 4. Generate tasks with dependencies
 Write-Output "📋 Step 4: Generating tasks with dependency management..."
 $featureDir = Split-Path -Parent $specFile
-$tasksFile = Join-Path $featureDir 'tasks.md'
+$tasksFile = Join-Path $featureDir 'task-breakdown.md'
 
 # Copy template and customize
 $templatePath = Join-Path $repoRoot 'templates/tasks-template.md'

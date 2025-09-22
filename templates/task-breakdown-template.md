@@ -4,6 +4,7 @@
 **Prerequisites**: plan.md (required), research.md, data-model.md, contracts/
 **Dependencies**: [LIST_DEPENDENT_BRANCHES]
 **Parallel Status**: [P] if can run in parallel, Sequential if not
+**Allow Task Splitting**: [SPLIT_TASKS] (default: false) - set to true to enable automatic splitting for >12 tasks
 
 ## Execution Flow (main)
 ```
@@ -29,12 +30,29 @@
    → Tests before implementation (TDD)
 6. Number tasks sequentially (T001, T002...)
 7. Generate dependency graph
-8. Create parallel execution examples
-9. Validate task completeness:
-   → All contracts have tests?
-   → All entities have models?
-   → All endpoints implemented?
-10. Return: SUCCESS (tasks ready for execution)
+8. Create FEATURE_DIR/tasks.md with:
+   - Correct feature name (numbered, no prefix) from implementation plan
+   - Numbered tasks (T001, T002, etc.)
+   - Clear file paths for each task
+   - Dependency notes
+   - Parallel execution guidance
+9. Validate task completeness and logical grouping
+10. Check SPLIT_TASKS parameter: 
+   → If SPLIT_TASKS=true AND >12 tasks: Apply smart splitting (keeping level 3 sections together)
+   → If SPLIT_TASKS=false: Keep all tasks in single file regardless of count
+   → If SPLIT_TASKS not specified: Default to false (no splitting)
+
+11. **Final Commit**: After completing the tasks breakdown, commit the changes:
+   - CRITICAL: Ensure you're still on feature branch before committing
+   - Run `git add .`
+   - Run `git commit -m "Complete task breakdown for [feature_name]"` (use numbered feature_name, not branch name)
+   - NEVER commit global files on feature branch
+
+12. **Workflow Completion**: 
+    - After completing all three phases (specify → plan → tasks), the spec is ready
+    - Agent should return to main branch: `git checkout main`
+    - Update global files (execution-plan.json, orchestration-plan.md) on main if needed
+    - Proceed to next feature only after current spec is complete
 ```
 
 ## Phase 0: Branch Management and Dependencies
@@ -67,23 +85,42 @@
 
 ## Task Size and Splitting Guidelines
 **CRITICAL REQUIREMENT**: Each tasks.md file must contain exactly 10-12 tasks, each requiring 2-6 hours of work.
+**SPLITTING CONTROL**: Task splitting is DISABLED by default and only occurs when explicitly enabled.
 
-**If a feature requires more than 12 tasks**:
+**Task Splitting Parameter**:
+- **SPLIT_TASKS**: Boolean parameter (default: false)
+- **false**: Keep all tasks in single file regardless of count (default behavior)
+- **true**: Enable intelligent splitting when >12 tasks are detected
+
+**Intelligent Splitting Strategy (when SPLIT_TASKS=true)**:
+When more than 12 tasks are identified AND splitting is enabled:
+- Split along level 3 sections (### headings) to maintain logical grouping
+- Keep related tasks together even if it slightly exceeds 12 tasks per file
+- Maintain phase dependencies (Setup → Tests → Core → Integration → Polish)
+- Use regex pattern `(### |- \[ ] T[0-9][0-9][0-9] )` to identify section boundaries
+
+**When SPLIT_TASKS=true and feature requires more than 12 tasks**:
 - Split into multiple task files: `tasks1.md`, `tasks2.md`, `tasks3.md`, etc.
-- Each split should be logical (e.g., Frontend vs Backend, Core vs Extensions)
+- Each split should be logical (e.g., Core vs Extensions, Frontend vs Backend)
 - Maintain dependencies between task files
-- First task file should contain foundational work
-- Subsequent files build upon previous ones
+- First task file should contain foundational work (Setup + Tests + Core basics)
+- Subsequent files build upon previous ones (Extensions, Advanced Features, Polish)
 
 **Task Estimation Guidelines**:
 - **2 hours**: Simple model creation, basic test writing
 - **3-4 hours**: Service implementation, API endpoint with validation
 - **5-6 hours**: Complex integration, performance optimization, comprehensive testing
 
-**When to Split**:
-- More than 12 total tasks identified
-- Clear logical boundaries exist (frontend/backend, core/extensions)
-- Some tasks can be done independently after core foundation
+**Smart Splitting Rules (when enabled)**:
+- Level 3 sections (###) stay together in same file when possible
+- If a section has >12 tasks, split within the section but preserve logical sub-grouping
+- Maintain clear dependencies between split files
+- Each split file should have a clear theme/focus
+
+**Default Behavior (SPLIT_TASKS=false)**:
+- All tasks remain in single tasks.md file
+- No automatic splitting regardless of task count
+- Simpler workflow for smaller features or when splitting is not desired
 
 ## Path Conventions
 - **Single project**: `src/`, `tests/` at repository root
@@ -165,7 +202,7 @@
 
 ---
 
-**Note**: This tasks file includes enhanced dependency management for the orchestrate workflow. Ensure proper rebasing and coordination with dependent features.
+**Note**: This tasks file includes enhanced dependency management for the Project Orchestration workflow. Ensure proper rebasing and coordination with dependent features.
 **CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation**
 - [ ] T004 [P] Contract test POST /api/users in tests/contract/test_users_post.py
 - [ ] T005 [P] Contract test GET /api/users/{id} in tests/contract/test_users_get.py
@@ -240,16 +277,21 @@ Task: "Integration test auth in tests/integration/test_auth.py"
    - Setup → Tests → Models → Services → Endpoints → Polish
    - Dependencies block parallel execution
 
-5. **Task Splitting Logic**:
-   - If total tasks > 12: Split by logical boundaries
-   - Common splits: Frontend/Backend, Core/Extensions, Phase1/Phase2
+5. **Smart Task Splitting Logic**:
+   - Check SPLIT_TASKS parameter value
+   - If SPLIT_TASKS=false (default): Keep all tasks in single file
+   - If SPLIT_TASKS=true AND total tasks > 12: Split by logical section boundaries (### headings)
+   - Common splits: Core/Extensions, Product/Advanced, Frontend/Backend
    - Maintain clear dependencies between task files
+   - Keep related tasks within same level 3 section together
 
 ## Validation Checklist
 *GATE: Checked by main() before returning*
 
 - [ ] **Task count**: 10-12 implementation tasks (excluding T000-T005 branch management)
-- [ ] **If >12 tasks**: Split into multiple files with logical boundaries
+- [ ] **Split parameter check**: SPLIT_TASKS parameter evaluated (default: false)
+- [ ] **If SPLIT_TASKS=true AND >12 tasks**: Split using smart section-aware strategy
+- [ ] **If SPLIT_TASKS=false**: Keep all tasks in single file regardless of count
 - [ ] **Task estimates**: Each task is 2-6 hours of work
 - [ ] All contracts have corresponding tests
 - [ ] All entities have model tasks
@@ -257,4 +299,5 @@ Task: "Integration test auth in tests/integration/test_auth.py"
 - [ ] Parallel tasks truly independent
 - [ ] Each task specifies exact file path
 - [ ] No task modifies same file as another [P] task
-- [ ] **Split file dependencies**: If multiple task files, clear dependencies between them
+- [ ] **Split file dependencies**: If splitting enabled and multiple files created, clear dependencies between them
+- [ ] **Section integrity**: If splitting enabled, level 3 sections kept together where possible

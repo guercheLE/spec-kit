@@ -1,5 +1,5 @@
 #!/usr/bin/env pwsh
-# MVP to Full Product Orchestrator - PowerShell version
+# Project Development Orchestrator - PowerShell version
 [CmdletBinding()]
 param(
     [switch]$Json,
@@ -9,7 +9,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 if (-not $ProjectDescription -or $ProjectDescription.Count -eq 0) {
-    Write-Error "Usage: ./mvp-to-full.ps1 [-Json] <project description>"; exit 1
+    Write-Error "Usage: ./orchestrate.ps1 [-Json] <project description>"; exit 1
 }
 $projectDesc = ($ProjectDescription -join ' ').Trim()
 
@@ -24,44 +24,44 @@ $projectStateResult = & $projectStateScript -Json | ConvertFrom-Json
 $projectType = $projectStateResult.project_type
 Write-Host "📊 Project type detected: $projectType" -ForegroundColor Green
 
-# Create MVP plan file if it doesn't exist
-$mvpPlanFile = Join-Path $repoRoot 'mvp-plan.md'
-if (-not (Test-Path $mvpPlanFile)) {
-    $templateFile = Join-Path $repoRoot 'templates/mvp-plan-template.md'
+# Create orchestration plan file if it doesn't exist
+$orchestrationPlanFile = Join-Path $repoRoot 'orchestration-plan.md'
+if (-not (Test-Path $orchestrationPlanFile)) {
+    $templateFile = Join-Path $repoRoot '.specify/templates/orchestration-plan-template.md'
     if (Test-Path $templateFile) {
-        Copy-Item $templateFile $mvpPlanFile -Force
+        Copy-Item $templateFile $orchestrationPlanFile -Force
     } else {
         @"
-# MVP to Full Product Plan
+# Project Orchestration Plan
 
 **Project**: [PROJECT_NAME]
 **Description**: $projectDesc
 
-## MVP Features (Priority 1)
+## Product Features (Priority 1)
 - [ ] Core Feature 1
 - [ ] Core Feature 2  
 - [ ] Basic Auth
 
-## Full Product Features (Priority 2)
+## Enhanced Product Features (Priority 2)
 - [ ] Advanced Feature 1
 - [ ] Analytics
 - [ ] Advanced Auth
 
-## Full Product Features (Priority 3)
+## Enhanced Product Features (Priority 3)
 - [ ] Premium Features
 - [ ] Integrations
 - [ ] Admin Panel
 
 ## Dependencies
 ``````
-MVP Features -> Full Product P2 -> Full Product P3
+Product Features -> Enhanced Product P2 -> Enhanced Product P3
 ``````
 
 ## Execution Plan
 1. Analyze and identify specific features from project description
 2. Create dependency graph
 3. Execute workflow for each feature in order
-"@ | Out-File -FilePath $mvpPlanFile -Encoding UTF8
+"@ | Out-File -FilePath $orchestrationPlanFile -Encoding UTF8
     }
 }
 
@@ -71,7 +71,7 @@ $planData = @{
     project_description = $projectDesc
     project_type = $projectType
     project_state = $projectStateResult
-    mvp_plan_file = $mvpPlanFile
+    orchestration_plan_file = $orchestrationPlanFile
     specs_directory = $specsDir
     features = @()
     dependencies = @{}
@@ -83,7 +83,7 @@ $planData | Out-File -FilePath $executionPlan -Encoding UTF8
 
 if ($Json) {
     $result = @{
-        MVP_PLAN_FILE = $mvpPlanFile
+        ORCHESTRATION_PLAN_FILE = $orchestrationPlanFile
         EXECUTION_PLAN = $executionPlan
         SPECS_DIR = $specsDir
         PROJECT_TYPE = $projectType
@@ -92,7 +92,7 @@ if ($Json) {
     } | ConvertTo-Json -Compress
     Write-Output $result
 } else {
-    Write-Output "MVP_PLAN_FILE: $mvpPlanFile"
+    Write-Output "ORCHESTRATION_PLAN_FILE: $orchestrationPlanFile"
     Write-Output "EXECUTION_PLAN: $executionPlan"
     Write-Output "SPECS_DIR: $specsDir"
     Write-Output "PROJECT_TYPE: $projectType"

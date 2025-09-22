@@ -24,8 +24,8 @@ $specsDir = Join-Path $repoRoot "specs"
 # Define required artifacts for a complete spec
 $requiredArtifacts = @(
     "spec.md",
-    "plan.md", 
-    "tasks.md",
+    "feature-planning.md", 
+    "task-breakdown.md",
     "data-model.md",
     "research.md",
     "quickstart.md"
@@ -60,8 +60,8 @@ function Analyze-Spec {
         }
     }
     
-    # Special analysis for tasks.md
-    $tasksPath = Join-Path $SpecPath "tasks.md"
+    # Special analysis for task-breakdown.md
+    $tasksPath = Join-Path $SpecPath "task-breakdown.md"
     if (Test-Path $tasksPath) {
         $tasksContent = Get-Content $tasksPath -Raw
         $totalTasks = ([regex]::Matches($tasksContent, "^- \[ \]", [System.Text.RegularExpressions.RegexOptions]::Multiline)).Count

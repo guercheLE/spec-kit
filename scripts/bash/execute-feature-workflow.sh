@@ -91,6 +91,16 @@ cat > "$SUMMARY_FILE" << EOF
 EOF
 
 echo "✅ Execution summary: $SUMMARY_FILE"
+
+# Commit all generated files
+echo "📝 Step 5: Committing generated files..."
+git add .
+git commit -m "Complete orchestrated workflow for $FEATURE_NAME"
+
+# CRITICAL GIT FIX: Refresh Git working directory cache after commit
+echo "🔄 Refreshing Git working directory cache..."
+git status > /dev/null
+
 echo ""
 echo "🎉 Orchestrated workflow complete for: $FEATURE_NAME"
 echo "📂 All files created in: $FEATURE_DIR"

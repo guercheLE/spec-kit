@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Orchestrated Workflows**: New automated workflows for feature development and MVP to full product transition
   - `execute-feature-workflow.sh/ps1` scripts for end-to-end feature development automation
-  - `mvp-to-full.sh/ps1` scripts for seamless MVP to full product orchestration
+  - `orchestrate.sh/ps1` scripts for seamless MVP to full product orchestration
   - Project state analysis capabilities to determine greenfield vs brownfield projects
 - **Enhanced Resumption Capabilities**: Comprehensive analysis and resumption tools for interrupted development
   - `analyze-spec-completion.sh/ps1` scripts for detailed project state assessment
@@ -22,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Enhanced agent documentation in `AGENTS.md` with comprehensive integration guidelines
 - **MVP Transition Templates**: New template system for MVP planning and execution
   - `templates/mvp-plan-template.md` for structured MVP planning
-  - `templates/commands/mvp-to-full.md` command template for transition workflows
+  - `templates/commands/orchestrate.md` command template for transition workflows
 - Codex CLI support (thank you [@honjo-hiroaki-gtt](https://github.com/honjo-hiroaki-gtt) for the contribution in [#14](https://github.com/guercheLE/spec-kit/pull/14))
 - Codex-aware context update tooling (Bash and PowerShell) so feature plans refresh `AGENTS.md` alongside existing assistants without manual edits.
 

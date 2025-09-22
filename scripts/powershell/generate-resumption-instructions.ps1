@@ -1,4 +1,4 @@
-# Resumption Instructions Generator - Creates precise instructions to resume interrupted mvp-to-full execution
+# Resumption Instructions Generator - Creates precise instructions to resume interrupted orchestration execution
 param(
     [switch]$Json,
     [string]$Reason = "execution_interrupted",
@@ -8,7 +8,7 @@ param(
 
 if ($Help) {
     Write-Host "Usage: .\generate-resumption-instructions.ps1 [-Json] [-Reason <reason>] [-NextSpecs <spec_list>]"
-    Write-Host "Generates resumption instructions for interrupted mvp-to-full execution"
+    Write-Host "Generates resumption instructions for interrupted orchestration execution"
     Write-Host "  -Reason: Reason for interruption (e.g., 'token_limit', 'manual_stop')"
     Write-Host "  -NextSpecs: Comma-separated list of remaining specs to process"
     exit 0
@@ -81,7 +81,7 @@ if ($Json) {
         priority_spec = $prioritySpec
         missing_artifacts = $missingArtifacts
         resumption_context = $resumptionContext
-        resumption_command = "Start a new chat and use this prompt: '/mvp-to-full Resume interrupted execution from $timestamp. $resumptionContext. Current state analysis: $($specAnalysisJson | ConvertTo-Json -Compress)'"
+        resumption_command = "Start a new chat and use this prompt: '/orchestrate Resume interrupted execution from $timestamp. $resumptionContext. Current state analysis: $($specAnalysisJson | ConvertTo-Json -Compress)'"
         current_state = $specAnalysis
         project_state = $projectState
     }
@@ -95,7 +95,7 @@ if ($Json) {
     Write-Host ""
     Write-Host "1. Copy this EXACT command and paste in new chat:" -ForegroundColor Yellow
     Write-Host ""
-    Write-Host "   /mvp-to-full Resume interrupted execution from $timestamp. $resumptionContext." -ForegroundColor White
+    Write-Host "   /orchestrate Resume interrupted execution from $timestamp. $resumptionContext." -ForegroundColor White
     Write-Host ""
     Write-Host "2. Include this state context:" -ForegroundColor Yellow
     Write-Host ""

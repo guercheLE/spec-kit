@@ -13,7 +13,7 @@ if (-not (Test-Path $paths.FEATURE_DIR -PathType Container)) {
     exit 1
 }
 if (-not (Test-Path $paths.IMPL_PLAN -PathType Leaf)) {
-    Write-Output "ERROR: plan.md not found in $($paths.FEATURE_DIR)"
+    Write-Output "ERROR: feature-planning.md not found in $($paths.FEATURE_DIR)"
     Write-Output "Run /plan first to create the plan."
     exit 1
 }

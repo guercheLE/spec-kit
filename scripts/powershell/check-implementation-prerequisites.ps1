@@ -13,12 +13,12 @@ if (-not (Test-Path $paths.FEATURE_DIR -PathType Container)) {
     exit 1
 }
 if (-not (Test-Path $paths.IMPL_PLAN -PathType Leaf)) {
-    Write-Output "ERROR: plan.md not found in $($paths.FEATURE_DIR)"
+    Write-Output "ERROR: feature-planning.md not found in $($paths.FEATURE_DIR)"
     Write-Output "Run /plan first to create the plan."
     exit 1
 }
 if (-not (Test-Path $paths.TASKS -PathType Leaf)) {
-    Write-Output "ERROR: tasks.md not found in $($paths.FEATURE_DIR)"
+    Write-Output "ERROR: task-breakdown.md not found in $($paths.FEATURE_DIR)"
     Write-Output "Run /tasks first to create the task list."
     exit 1
 }
@@ -29,7 +29,7 @@ if ($Json) {
     if (Test-Path $paths.DATA_MODEL) { $docs += 'data-model.md' }
     if ((Test-Path $paths.CONTRACTS_DIR) -and (Get-ChildItem -Path $paths.CONTRACTS_DIR -ErrorAction SilentlyContinue | Select-Object -First 1)) { $docs += 'contracts/' }
     if (Test-Path $paths.QUICKSTART) { $docs += 'quickstart.md' }
-    if (Test-Path $paths.TASKS) { $docs += 'tasks.md' }
+    if (Test-Path $paths.TASKS) { $docs += 'task-breakdown.md' }
     [PSCustomObject]@{ FEATURE_DIR=$paths.FEATURE_DIR; AVAILABLE_DOCS=$docs } | ConvertTo-Json -Compress
 } else {
     Write-Output "FEATURE_DIR:$($paths.FEATURE_DIR)"
@@ -38,5 +38,5 @@ if ($Json) {
     Test-FileExists -Path $paths.DATA_MODEL -Description 'data-model.md' | Out-Null
     Test-DirHasFiles -Path $paths.CONTRACTS_DIR -Description 'contracts/' | Out-Null
     Test-FileExists -Path $paths.QUICKSTART -Description 'quickstart.md' | Out-Null
-    Test-FileExists -Path $paths.TASKS -Description 'tasks.md' | Out-Null
+    Test-FileExists -Path $paths.TASKS -Description 'task-breakdown.md' | Out-Null
 }

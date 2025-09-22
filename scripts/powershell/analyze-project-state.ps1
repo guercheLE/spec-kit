@@ -33,8 +33,8 @@ if (Test-Path $specsDir) {
         $specName = $_.Name
         $existingSpecs += $specName
         
-        # Check if tasks.md exists and analyze completion
-        $tasksFile = Join-Path $_.FullName 'tasks.md'
+        # Check if task-breakdown.md exists and analyze completion
+        $tasksFile = Join-Path $_.FullName 'task-breakdown.md'
         if (Test-Path $tasksFile) {
             $content = Get-Content $tasksFile -Raw
             $totalTasks = ([regex]::Matches($content, '^- \[ \]', 'Multiline')).Count

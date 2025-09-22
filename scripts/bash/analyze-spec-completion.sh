@@ -8,19 +8,19 @@ ARGS=()
 
 for arg in "$@"; do
     case "$arg" in
-        --json) JSON_MODE=true ;;
+        --json) JSON_MODE=true ;; 
         --help|-h) 
             echo "Usage: $0 [--json] [spec_path]"
             echo "Analyzes completion status of specs. If spec_path provided, analyzes single spec."
             echo "Otherwise analyzes all specs in specs/ directory."
-            exit 0 ;;
+            exit 0 ;; 
         *) 
             if [ -z "$SPEC_PATH" ]; then
                 SPEC_PATH="$arg"
             else
                 ARGS+=("$arg")
             fi
-            ;;
+            ;; 
     esac
 done
 
@@ -76,7 +76,7 @@ analyze_spec() {
     
     # Special analysis for tasks.md
     if [ -f "$spec_path/tasks.md" ]; then
-        total_tasks=$(grep -E "^- \[\s*\]" "$spec_path/tasks.md" 2>/dev/null | wc -l || echo "0")
+        total_tasks=$(grep -E "^- \[\\s*\\]" "$spec_path/tasks.md" 2>/dev/null | wc -l || echo "0")
         completed_tasks=$(grep -E "^- \[x\]" "$spec_path/tasks.md" 2>/dev/null | wc -l || echo "0")
         
         # Trim whitespace and handle case where wc returns empty string
@@ -190,8 +190,8 @@ else
                 fi
                 analyze_spec "$spec_dir"
             fi
-        done
-        echo "],"
+done
+        echo "]",
         echo '"analysis_date":"'$(date -Iseconds)'"'
         echo "}"
     else

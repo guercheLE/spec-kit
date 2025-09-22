@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Resumption Instructions Generator - Creates precise instructions to resume interrupted mvp-to-full execution
+# Resumption Instructions Generator - Creates precise instructions to resume interrupted orchestration execution
 set -e
 
 JSON_MODE=false
@@ -9,16 +9,16 @@ ARGS=()
 
 for arg in "$@"; do
     case "$arg" in
-        --json) JSON_MODE=true ;;
-        --reason=*) REASON="${arg#*=}" ;;
-        --next-specs=*) NEXT_SPECS="${arg#*=}" ;;
+        --json) JSON_MODE=true ;; 
+        --reason=*) REASON="${arg#*=}" ;; 
+        --next-specs=*) NEXT_SPECS="${arg#*=}" ;; 
         --help|-h) 
             echo "Usage: $0 [--json] [--reason=<reason>] [--next-specs=<spec_list>]"
-            echo "Generates resumption instructions for interrupted mvp-to-full execution"
+            echo "Generates resumption instructions for interrupted orchestration execution"
             echo "  --reason: Reason for interruption (e.g., 'token_limit', 'manual_stop')"
             echo "  --next-specs: Comma-separated list of remaining specs to process"
-            exit 0 ;;
-        *) ARGS+=("$arg") ;;
+            exit 0 ;; 
+        *) ARGS+=("$arg") ;; 
     esac
 done
 
@@ -98,7 +98,7 @@ if $JSON_MODE; then
   "priority_spec": "$PRIORITY_SPEC",
   "missing_artifacts": "$MISSING_ARTIFACTS",
   "resumption_context": "$RESUMPTION_CONTEXT",
-  "resumption_command": "Start a new chat and use this prompt: '/mvp-to-full Resume interrupted execution from $TIMESTAMP. $RESUMPTION_CONTEXT. Current state analysis: $SPEC_ANALYSIS'",
+  "resumption_command": "Start a new chat and use this prompt: '/orchestrate Resume interrupted execution from $TIMESTAMP. $RESUMPTION_CONTEXT. Current state analysis: $SPEC_ANALYSIS'",
   "current_state": $SPEC_ANALYSIS,
   "project_state": $PROJECT_STATE
 }
@@ -113,7 +113,7 @@ Reason: $REASON
 
 1. Copy this EXACT command and paste in new chat:
 
-   /mvp-to-full Resume interrupted execution from $TIMESTAMP. $RESUMPTION_CONTEXT.
+   /orchestrate Resume interrupted execution from $TIMESTAMP. $RESUMPTION_CONTEXT.
 
 2. Include this state context:
 

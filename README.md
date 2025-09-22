@@ -97,7 +97,7 @@ Want to see Spec Kit in action? Watch our [video overview](https://www.youtube.c
 
 ### 🔄 Orchestrated Workflows
 - **Complete Feature Development**: New `/feature-workflow` command automates the entire development cycle from specification to implementation
-- **MVP to Full Product Transition**: Enhanced `/mvp-to-full` command provides intelligent orchestration for scaling minimum viable products
+- **MVP to Full Product Transition**: Enhanced `/orchestrate` command provides intelligent orchestration for scaling minimum viable products
 - **Project State Analysis**: Automatic detection of greenfield vs brownfield projects with tailored workflow recommendations
 
 ### 🎯 Enhanced Resumption Capabilities  
@@ -189,7 +189,7 @@ Spec Kit now includes powerful orchestrated workflows for streamlined developmen
 
 | Command         | Description                                                           |
 |-----------------|-----------------------------------------------------------------------|
-| `/mvp-to-full`  | Orchestrate transition from MVP to full product with detailed analysis |
+| `/orchestrate`  | Orchestrate transition from MVP to full product with detailed analysis |
 | `/feature-workflow` | Execute complete feature development workflow (specify → plan → tasks → implement) |
 | `/analyze-completion` | Analyze project completion status and generate resumption instructions |
 

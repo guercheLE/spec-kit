@@ -138,7 +138,7 @@ These scripts automatically:
 4. Create task breakdowns with dependency management
 5. Produce execution summaries for team coordination
 
-This is particularly useful for MVP-to-Full product development where multiple features need coordinated execution.
+This is particularly useful for orchestrate product development where multiple features need coordinated execution.
 
 ## Next Steps
 

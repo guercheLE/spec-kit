@@ -1,25 +1,30 @@
 ---
-description: Orchestrate MVP to Full Product development by identifying features, dependencies, and executing complete workflow for each spec.
+description: Orchestrate complete project development by identifying features, dependencies, and executing full workflow for each specification.
+scripts:
+  sh: scripts/bash/orchestrate.sh --json "{ARGS}"
+  ps: scripts/powershell/orchestrate.ps1 -Json "{ARGS}"
 ---
 
-# MVP to Full Product Orchestrator
+# Project Development Orchestrator
 
-Given the project description provided as an argument, orchestrate the complete development workflow from MVP to Full Product.
+Given the project description provided as an argument, orchestrate the complete development workflow from concept to implementation-ready tasks.
 
 ## Overview
 
 This command analyzes your project (greenfield vs brownfield), identifies required features, creates dependency graphs, and executes the complete spec-driven workflow for each feature.
 
-**For Brownfield Projects**: Prioritizes constitutional compliance and completing existing work.  
-**For Greenfield Projects**: Focuses on MVP feature identification and dependency planning.
+**For Brownfield Projects**: Prioritizes constitutional compliance and completing existing work.
+**For Greenfield Projects**: Focuses on feature identification and dependency planning.
+
+**Alternative Names**: This command was formerly known as "Product-to-Full" but now supports complete project orchestration beyond just Product scenarios.
 
 ---
 
 ## Execution Steps
 
-### 1. Initialize MVP Planning
+### 1. Initialize Project Planning
 - **Check for Resumption**: If "$ARGUMENTS" contains "Resume interrupted execution", proceed to step 1.1
-- Run `.specify/scripts/bash/mvp-to-full.sh --json "$ARGUMENTS"` from repo root
+- Run `{SCRIPT}` from repo root
 - Parse JSON output for MVP_PLAN_FILE, EXECUTION_PLAN, SPECS_DIR, PROJECT_TYPE, PROJECT_STATE, STATUS
 - All file paths must be absolute
 
@@ -31,7 +36,7 @@ This command analyzes your project (greenfield vs brownfield), identifies requir
 
 ### 2. Analyze Project State
    - **Greenfield Projects**: No existing src/, tests/, or docs/ folders
-     - Proceed with standard MVP-to-Full planning
+     - Proceed with standard project orchestration planning
      - Create new features from scratch
    - **Brownfield Projects**: Existing implementation detected
      - Compare PROJECT_STATE against constitution.md requirements
@@ -46,44 +51,44 @@ This command analyzes your project (greenfield vs brownfield), identifies requir
    - Identify implementation gaps vs constitutional requirements
 
 4. **Feature Planning Based on Project Type**:
-   
+
    **For Greenfield Projects**:
-   - Identify MVP features (core functionality needed for basic product)
+   - Identify Product features (core functionality needed for basic product)
    - Identify Full Product features (enhancements for complete product)
    - Create feature dependency graph (which features depend on others)
-   
+
    **For Brownfield Projects**:
    - Review existing specs from PROJECT_STATE.existing_specs
    - Complete any incomplete features first (PROJECT_STATE.incomplete_features)
    - Fill constitutional gaps (PROJECT_STATE.constitutional_gaps)
-   - Add missing MVP features not yet implemented
-   - Plan Full Product features on top of existing + MVP baseline
+   - Add missing Product features not yet implemented
+   - Plan Full Product features on top of existing + Product baseline
 
-5. **Update MVP Plan**:
+5. **Update Product Plan**:
    - Load MVP_PLAN_FILE and replace placeholders with actual analysis
-   - **For Greenfield**: Organize new features by priority: MVP (P1) → Full Product (P2) → Advanced (P3)
-   - **For Brownfield**: 
+   - **For Greenfield**: Organize new features by priority: Product (P1) → Full Product (P2) → Advanced (P3)
+   - **For Brownfield**:
      - Mark existing completed features as [DONE]
      - Mark incomplete features as [IN PROGRESS] with completion status
      - Mark constitutional gaps as [CRITICAL] - highest priority
-     - Add new MVP features as [TODO]
+     - Add new Product features as [TODO]
    - Define clear dependencies between features
    - Mark which features can be developed in parallel [P]
 
 6. **Execute Workflow for Each Feature**:
-   
+
    **RESUMPTION PRIORITY (if resuming)**:
    1. **Complete Incomplete Specs First**: Check spec completion status via `.specify/scripts/bash/analyze-spec-completion.sh`
    2. **Use Existing Spec Folders**: Never create new numbered folders for existing incomplete specs
    3. **Complete Missing Artifacts**: Generate only missing artifacts (spec.md, plan.md, tasks.md, etc.)
    4. **Continue Task Implementation**: For specs with tasks.md, continue from last completed task
-   
+
    **Priority Order for Brownfield**:
    1. **Constitutional Compliance**: Fix gaps violating constitution.md first
-   2. **Complete Incomplete**: Finish any incomplete_features 
-   3. **Missing MVP**: Add any missing MVP functionality
+   2. **Complete Incomplete**: Finish any incomplete_features
+   3. **Missing Product**: Add any missing Product functionality
    4. **Full Product**: Add enhancement features
-   
+
    **Manual Approach - For each feature in dependency order**:
    - **Specify**: Run `/specify` command with feature description
    - **Auto-clarify**: Use best judgment to fix clarification items in spec
@@ -93,17 +98,17 @@ This command analyzes your project (greenfield vs brownfield), identifies requir
      - **Task splitting**: Each file contains 10-12 tasks (2-6h each)
      - **Split dependencies**: tasks1.md must complete before tasks2.md starts
      - **Logical grouping**: Core functionality in tasks1.md, extensions in tasks2.md, etc.
-   
+
    **Automated Orchestration (Optional)**:
    For teams preferring automated workflow execution, use the orchestrated feature workflow scripts:
    - **Linux/macOS**: `.specify/scripts/bash/execute-feature-workflow.sh <feature_name> <feature_description> [dependent_branches]`
    - **Windows**: `.specify/scripts/powershell/execute-feature-workflow.ps1 <feature_name> <feature_description> [dependent_branches]`
-   
+
    These scripts automate the complete workflow: spec creation → auto-clarification → planning → task generation → execution summary.
 
 7. **Generate Execution Summary**:
    - **For Greenfield**: List all created specs with their branch names
-   - **For Brownfield**: 
+   - **For Brownfield**:
      - Show constitutional gaps addressed
      - List completed vs new specs
      - Highlight incomplete features that were finished
@@ -128,7 +133,7 @@ This command analyzes your project (greenfield vs brownfield), identifies requir
 
 ### RESUMPTION PROTOCOL:
 1. **Start New Chat Window**
-2. **Use Generated Resumption Command**: Copy the exact `/mvp-to-full` command with resumption context
+2. **Use Generated Resumption Command**: Copy the exact `/orchestrate` command with resumption context
 3. **System Will Automatically**:
    - Detect existing spec folders and their completion status
    - Continue from exact interruption point

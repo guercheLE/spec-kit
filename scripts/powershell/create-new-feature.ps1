@@ -1,78 +1,205 @@
-#!/usr/bin/env pwsh
-# Create a new feature (moved to powershell/)
-[CmdletBinding()]
+# Create a new feature branch and spec directory (PowerShell version)
 param(
-    [switch]$Json,
-    [Parameter(ValueFromRemainingArguments = $true)]
-    [string[]]$FeatureDescription
+    [Parameter(Mandatory=$true)]
+    [string]$FeatureDescription,
+    
+    [Parameter(Mandatory=$false)]
+    [string]$TemplateDir = ""
 )
-$ErrorActionPreference = 'Stop'
 
-if (-not $FeatureDescription -or $FeatureDescription.Count -eq 0) {
-    Write-Error "Usage: ./create-new-feature.ps1 [-Json] <feature description>"; exit 1
+$ErrorActionPreference = "Stop"
+
+# Script directory for includes
+$ScriptDir = Split-Path $MyInvocation.MyCommand.Path -Parent
+
+# Validate git repository
+try {
+    $RepoRoot = git rev-parse --show-toplevel 2>$null
+    if (-not $RepoRoot) {
+        Write-Error "ERROR: Not in a git repository"
+        exit 1
+    }
+} catch {
+    Write-Error "ERROR: Not in a git repository"
+    exit 1
 }
-$featureDesc = ($FeatureDescription -join ' ').Trim()
 
-$repoRoot = git rev-parse --show-toplevel
-$specsDir = Join-Path $repoRoot 'specs'
-New-Item -ItemType Directory -Path $specsDir -Force | Out-Null
+# Check if we're on main branch
+$CurrentBranch = git rev-parse --abbrev-ref HEAD
+if ($CurrentBranch -ne "main") {
+    Write-Error "ERROR: Must be on main branch. Currently on: $CurrentBranch"
+    exit 1
+}
 
-$highest = 0
-if (Test-Path $specsDir) {
-    Get-ChildItem -Path $specsDir -Directory | ForEach-Object {
-        if ($_.Name -match '^(\d{3})') {
-            $num = [int]$matches[1]
-            if ($num -gt $highest) { $highest = $num }
+# Source common PowerShell functions (if exists)
+$CommonScript = Join-Path $ScriptDir "common.ps1"
+if (Test-Path $CommonScript) {
+    . $CommonScript
+}
+
+# Generate branch name components
+$BranchName = $FeatureDescription.ToLower() -replace '[^a-z0-9]', '-' -replace '-+', '-' -replace '^-', '' -replace '-', ''
+$Words = ($BranchName -split '-' | Where-Object { $_ -ne '' } | Select-Object -First 3) -join '-'
+
+# Find next available branch number
+$NextNumber = 1
+try {
+    $AllBranches = git branch -a 2>$null | ForEach-Object { $_ -replace '^\s*[\*\s]*', '' -replace 'remotes/', '' } | Sort-Object -Unique
+    $FeatureBranches = $AllBranches | Where-Object { $_ -match '^(origin/)?feature/\d{3}-' }
+    
+    if ($FeatureBranches) {
+        $UsedNumbers = $FeatureBranches | ForEach-Object {
+            if ($_ -match '^(origin/)?feature/(\d{3})-') {
+                [int]$Matches[2]
+            }
+        } | Sort-Object -Unique
+        
+        $NextNumber = 1
+        foreach ($Num in $UsedNumbers) {
+            if ($Num -eq $NextNumber) {
+                $NextNumber++
+            } else {
+                break
+            }
         }
     }
-}
-$next = $highest + 1
-$featureNum = ('{0:000}' -f $next)
-
-$branchName = $featureDesc.ToLower() -replace '[^a-z0-9]', '-' -replace '-{2,}', '-' -replace '^-', '' -replace '-$', ''
-$words = ($branchName -split '-') | Where-Object { $_ } | Select-Object -First 3
-$featureDirName = "$featureNum-$([string]::Join('-', $words))"
-$branchName = "feature/$featureDirName"
-
-# Enhanced branching logic: prioritize develop > main > master > current
-function Get-BaseBranch {
-    git show-ref --verify --quiet refs/heads/develop -ErrorAction SilentlyContinue
-    if ($LASTEXITCODE -eq 0) { return 'develop' }
-    
-    git show-ref --verify --quiet refs/heads/main -ErrorAction SilentlyContinue
-    if ($LASTEXITCODE -eq 0) { return 'main' }
-    
-    git show-ref --verify --quiet refs/heads/master -ErrorAction SilentlyContinue
-    if ($LASTEXITCODE -eq 0) { return 'master' }
-    
-    return (git branch --show-current)
+} catch {
+    Write-Host "⚠️  Warning: Could not determine branch numbers, using 001" -ForegroundColor Yellow
+    $NextNumber = 1
 }
 
-$baseBranch = Get-BaseBranch
-git checkout $baseBranch | Out-Null
+$FeatureNumber = "{0:D3}" -f $NextNumber
+$FeatureDirName = "$FeatureNumber-$Words"
+$BranchName = "feature/$FeatureDirName"
 
-# Check if branch already exists (for resumption scenarios)
-$branchExists = git show-ref --verify --quiet "refs/heads/$branchName" -ErrorAction SilentlyContinue
-if ($LASTEXITCODE -eq 0) {
-    Write-Host "[specify] Branch $branchName already exists, checking out..." -ForegroundColor Yellow
-    git checkout $branchName | Out-Null
+Write-Host "🚀 Creating new feature: $FeatureDescription" -ForegroundColor Cyan
+Write-Host "   Branch: $BranchName" -ForegroundColor Gray
+Write-Host "   Directory: .specify/$FeatureDirName" -ForegroundColor Gray
+Write-Host ""
+
+# PHASE 1: Resolve branch naming conflicts BEFORE checkout
+Write-Host "🔄 Phase 1: Resolving branch naming conflicts..." -ForegroundColor Magenta
+
+$Phase1Script = Join-Path $ScriptDir "resolve-branch-conflicts.ps1"
+if (Test-Path $Phase1Script) {
+    try {
+        $ResolvedBranchName = & $Phase1Script -FeatureDescription $FeatureDescription -NewBranchNumber $NextNumber
+        if ($LASTEXITCODE -eq 0 -and $ResolvedBranchName) {
+            $BranchName = $ResolvedBranchName.Trim()
+            Write-Host "✅ Phase 1 completed successfully" -ForegroundColor Green
+        } else {
+            Write-Host "⚠️  Phase 1 script returned an error, continuing with original branch name" -ForegroundColor Yellow
+        }
+    } catch {
+        Write-Host "⚠️  Phase 1 script failed, continuing with original branch name" -ForegroundColor Yellow
+        Write-Host "   Error: $($_.Exception.Message)" -ForegroundColor Red
+    }
 } else {
-    git checkout -b $branchName | Out-Null
+    Write-Host "⚠️  Phase 1 script not found, skipping branch conflict resolution" -ForegroundColor Yellow
 }
 
-$featureDir = Join-Path $specsDir $featureDirName
-New-Item -ItemType Directory -Path $featureDir -Force | Out-Null
+Write-Host ""
 
-$template = Join-Path $repoRoot 'templates/spec-template.md'
-$specFile = Join-Path $featureDir 'spec.md'
-if (Test-Path $template) { Copy-Item $template $specFile -Force } else { New-Item -ItemType File -Path $specFile | Out-Null }
+# Create and checkout new branch
+Write-Host "🌿 Creating and checking out branch: $BranchName" -ForegroundColor Cyan
+try {
+    git checkout -b $BranchName 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "ERROR: Failed to create branch $BranchName"
+        exit 1
+    }
+    Write-Host "✅ Successfully created and checked out: $BranchName" -ForegroundColor Green
+} catch {
+    Write-Error "ERROR: Failed to create branch $BranchName"
+    exit 1
+}
 
-if ($Json) {
-    $obj = [PSCustomObject]@{ BRANCH_NAME = $branchName; SPEC_FILE = $specFile; FEATURE_NUM = $featureNum; BASE_BRANCH = $baseBranch }
-    $obj | ConvertTo-Json -Compress
+Write-Host ""
+
+# PHASE 2: Resolve folder naming conflicts AFTER checkout
+Write-Host "🔄 Phase 2: Resolving folder naming conflicts..." -ForegroundColor Magenta
+
+$SpecifyDir = Join-Path $RepoRoot ".specify"
+$FeatureDir = Join-Path $SpecifyDir $FeatureDirName
+
+$Phase2Script = Join-Path $ScriptDir "resolve-folder-conflicts.ps1"
+if (Test-Path $Phase2Script) {
+    try {
+        $ResolvedFeatureDir = & $Phase2Script -Words $Words -NewBranchNumber $NextNumber
+        if ($LASTEXITCODE -eq 0 -and $ResolvedFeatureDir) {
+            $FeatureDir = $ResolvedFeatureDir.Trim()
+            Write-Host "✅ Phase 2 completed successfully" -ForegroundColor Green
+        } else {
+            Write-Host "⚠️  Phase 2 script returned an error, continuing with original folder" -ForegroundColor Yellow
+        }
+    } catch {
+        Write-Host "⚠️  Phase 2 script failed, continuing with original folder" -ForegroundColor Yellow
+        Write-Host "   Error: $($_.Exception.Message)" -ForegroundColor Red
+    }
 } else {
-    Write-Output "BRANCH_NAME: $branchName"
-    Write-Output "SPEC_FILE: $specFile"
-    Write-Output "FEATURE_NUM: $featureNum"
-    Write-Output "BASE_BRANCH: $baseBranch"
+    Write-Host "⚠️  Phase 2 script not found, skipping folder conflict resolution" -ForegroundColor Yellow
 }
+
+# Ensure feature directory exists
+if (-not (Test-Path $FeatureDir)) {
+    Write-Host "📁 Creating feature directory: .specify/$FeatureDirName" -ForegroundColor Cyan
+    New-Item -ItemType Directory -Path $FeatureDir -Force | Out-Null
+}
+
+Write-Host ""
+
+# Copy template files if specified
+if ($TemplateDir -and (Test-Path $TemplateDir)) {
+    Write-Host "📋 Copying template files from: $TemplateDir" -ForegroundColor Cyan
+    try {
+        Copy-Item "$TemplateDir\*" $FeatureDir -Recurse -Force
+        Write-Host "✅ Template files copied successfully" -ForegroundColor Green
+    } catch {
+        Write-Host "⚠️  Failed to copy template files: $($_.Exception.Message)" -ForegroundColor Yellow
+    }
+    Write-Host ""
+}
+
+# Create initial files
+$SpecifyFile = Join-Path $FeatureDir "specify-request.md"
+$InitialContent = @"
+# Feature Request: $FeatureDescription
+
+Branch: $BranchName
+Feature Directory: .specify/$FeatureDirName
+Feature Number: $FeatureNumber
+
+## Description
+[Describe the feature request here]
+
+## Acceptance Criteria
+- [ ] Criterion 1
+- [ ] Criterion 2
+- [ ] Criterion 3
+
+## Technical Notes
+[Add any technical considerations here]
+"@
+
+Set-Content -Path $SpecifyFile -Value $InitialContent
+Write-Host "📝 Created initial specify-request.md" -ForegroundColor Green
+
+# Output JSON for script chaining
+$ResultJson = @{
+    branch_name = $BranchName
+    feature_dir = $FeatureDir
+    feature_number = $FeatureNumber
+    feature_dir_name = $FeatureDirName
+    words = $Words
+    description = $FeatureDescription
+} | ConvertTo-Json -Compress
+
+Write-Host ""
+Write-Host "🎉 Feature setup complete!" -ForegroundColor Green
+Write-Host "   Branch: $BranchName" -ForegroundColor Gray
+Write-Host "   Directory: .specify/$FeatureDirName" -ForegroundColor Gray
+Write-Host "   Ready for development!" -ForegroundColor Gray
+Write-Host ""
+
+# Output JSON result
+Write-Output $ResultJson

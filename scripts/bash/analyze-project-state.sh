@@ -41,18 +41,27 @@ EXISTING_SPECS=()
 COMPLETED_FEATURES=()
 INCOMPLETE_FEATURES=()
 MISSING_IMPLEMENTATIONS=()
+NEXT_BRANCH_NUMBER=1
 
 if [ -d "$SPECS_DIR" ]; then
+    HIGHEST_NUMBER=0
     for spec_dir in "$SPECS_DIR"/*; do
         if [ -d "$spec_dir" ]; then
             SPEC_NAME=$(basename "$spec_dir")
             EXISTING_SPECS+=("$SPEC_NAME")
             
+            # Extract branch number for tracking
+            BRANCH_NUMBER=$(echo "$SPEC_NAME" | grep -o '^[0-9]+' || echo "0")
+            BRANCH_NUMBER=$((10#$BRANCH_NUMBER))
+            if [ "$BRANCH_NUMBER" -gt "$HIGHEST_NUMBER" ]; then
+                HIGHEST_NUMBER=$BRANCH_NUMBER
+            fi
+            
             # Check if tasks.md exists and analyze completion
             TASKS_FILE="$spec_dir/tasks.md"
             if [ -f "$TASKS_FILE" ]; then
                 # Count completed vs total tasks
-                TOTAL_TASKS=$(grep -c "^- \[ \]" "$TASKS_FILE" 2>/dev/null || echo "0")
+                TOTAL_TASKS=$(grep -c "^- \[\]" "$TASKS_FILE" 2>/dev/null || echo "0")
                 COMPLETED_TASKS=$(grep -c "^- \[x\]" "$TASKS_FILE" 2>/dev/null || echo "0")
                 
                 if [ "$TOTAL_TASKS" -eq "$COMPLETED_TASKS" ] && [ "$TOTAL_TASKS" -gt 0 ]; then
@@ -67,6 +76,11 @@ if [ -d "$SPECS_DIR" ]; then
             fi
         fi
     done
+    
+    # Calculate next branch number
+    NEXT_BRANCH_NUMBER=$((HIGHEST_NUMBER + 1))
+else
+    NEXT_BRANCH_NUMBER=1
 fi
 
 # Analyze implementation folders
@@ -139,9 +153,11 @@ fi
 ANALYSIS_DATE=$(date +"%Y-%m-%d %H:%M:%S")
 
 if $JSON_MODE; then
-    printf '{"project_type":"%s","analysis_date":"%s","existing_specs":%s,"completed_features":%s,"incomplete_features":%s,"missing_implementations":%s,"src_files":%d,"test_files":%d,"doc_files":%d,"constitution_principles":%s,"constitution_requirements":%s,"constitutional_gaps":%s,"implementation_gaps":%s}\n' \
+    printf '{"project_type":"%s","analysis_date":"%s","next_branch_number":%d,"existing_specs":%s,"completed_features":%s,"incomplete_features":%s,"missing_implementations":%s,"src_files":%d,"test_files":%d,"doc_files":%d,"constitution_principles":%s,"constitution_requirements":%s,"constitutional_gaps":%s,"implementation_gaps":%s}\n
+' \
         "$PROJECT_TYPE" \
         "$ANALYSIS_DATE" \
+        "$NEXT_BRANCH_NUMBER" \
         "$(printf '%s\n' "${EXISTING_SPECS[@]}" | jq -R . | jq -s .)" \
         "$(printf '%s\n' "${COMPLETED_FEATURES[@]}" | jq -R . | jq -s .)" \
         "$(printf '%s\n' "${INCOMPLETE_FEATURES[@]}" | jq -R . | jq -s .)" \
@@ -156,6 +172,7 @@ if $JSON_MODE; then
 else
     echo "PROJECT TYPE: $PROJECT_TYPE"
     echo "ANALYSIS DATE: $ANALYSIS_DATE"
+    echo "NEXT BRANCH NUMBER: $NEXT_BRANCH_NUMBER"
     echo ""
     echo "=== EXISTING SPECS ==="
     printf '%s\n' "${EXISTING_SPECS[@]}"
